@@ -16,6 +16,12 @@
     "babel-register": "^6.26.0",
     "commander": "^2.11.0",
     "config": "^1.28.1",
-    "dvbtee": "^0.3.2"
+    "dvbtee": "^0.3.2",
+    "eslint": "^4.11.0",
+    "eslint-loader": "^1.9.0",
+    "eslint-plugin-async-await": "0.0.0"
+  },
+  "devDependencies": {
+    "eslint-plugin-async-await": "0.0.0"
   }
 }

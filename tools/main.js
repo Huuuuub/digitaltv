@@ -1,14 +1,19 @@
 import config from 'config';
 import program from 'commander';
-
+import fs from 'fs';
+import dvbtee from 'dvbtee';
 const main = (argv) => {
 
   console.log('let\'s go');
   program
-    .command('installUsersAndTeams')
-    .description('create not already defined users and set up teams')
+    .command('parse')
+    .description('')
     .action(() => {
-      installUsersAndTeams().then(() => {process.exit(0);});
+      var parser = new dvbtee.Parser({ 'passThru': true });
+      parser.on('psip', data => {
+        console.log(data.tableId);
+      });
+      fs.createReadStream('mux1-cp.ts').pipe(parser);
     });
 
   program.parse(argv);
