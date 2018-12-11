@@ -1,19 +1,28 @@
-import config from 'config';
+const R = require('ramda');
+
 import program from 'commander';
 import fs from 'fs';
+import path from 'path';
 import dvbtee from 'dvbtee';
-const main = (argv) => {
 
+const main = (argv) => {
+  console.log(__dirname);
   console.log('let\'s go');
   program
-    .command('parse')
-    .description('')
-    .action(() => {
-      var parser = new dvbtee.Parser({ 'passThru': true });
-      parser.on('psip', data => {
-        console.log(data.tableId);
+    .command('parse <stream>')
+    .option('-t, --table [tableName]', 'table name')
+    .action((stream, { table }) => {
+      console.log('>>>>', stream);
+      console.log('>>>>', table);
+      const filepath = path.join(__dirname, '..', 'streams', stream);
+      const parser = new dvbtee.Parser;
+      parser.on('data', (data) => {
+        if (!R.isNil(table) && (table !== data.tableName)) return;
+        console.log('table id: ' + data.tableId,
+          '\ntable name: ' + data.tableName,
+          '\ntable data:\n', JSON.stringify(data, null, 2));
       });
-      fs.createReadStream('mux1-cp.ts').pipe(parser);
+      fs.createReadStream(filepath).pipe(parser);
     });
 
   program.parse(argv);
