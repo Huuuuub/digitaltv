@@ -1,0 +1,153 @@
+#-----------------------------------------------------------------------------
+#
+#  TSDuck - The MPEG Transport Stream Toolkit
+#  Copyright (c) 2005-2018, Thierry Lelegard
+#  All rights reserved.
+#
+#  Redistribution and use in source and binary forms, with or without
+#  modification, are permitted provided that the following conditions are met:
+#
+#  1. Redistributions of source code must retain the above copyright notice,
+#     this list of conditions and the following disclaimer.
+#  2. Redistributions in binary form must reproduce the above copyright
+#     notice, this list of conditions and the following disclaimer in the
+#     documentation and/or other materials provided with the distribution.
+#
+#  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+#  AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+#  IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+#  ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
+#  LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+#  CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+#  SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+#  INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+#  CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+#  ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF
+#  THE POSSIBILITY OF SUCH DAMAGE.
+#
+#-----------------------------------------------------------------------------
+#
+#  Common makefile definitions for the TSDuck project.
+#
+#-----------------------------------------------------------------------------
+
+
+# Standard common makefile is in same directory.
+
+include $(patsubst %/,%,$(dir $(lastword $(MAKEFILE_LIST))))/Makefile.common
+
+# Project specific directories and files.
+
+STATIC_LIBTSDUCK := libtsduck.a
+SHARED_LIBTSDUCK := tsduck.so
+
+INSTALLERDIR := $(ROOTDIR)/installers
+SRCROOT      := $(ROOTDIR)/src
+LIBTSDUCKDIR := $(SRCROOT)/libtsduck
+TSTOOLSDIR   := $(SRCROOT)/tstools
+TSPLUGINSDIR := $(SRCROOT)/tsplugins
+LIBTSDUCK    := $(LIBTSDUCKDIR)/$(OBJDIR)/$(STATIC_LIBTSDUCK)
+
+ifndef TSPLUGINS
+    export TSPLUGINS := $(sort $(notdir $(basename $(wildcard $(TSPLUGINSDIR)/tsplugin_*.cpp))))
+    export TSEXECS   := $(sort $(filter-out $(notdir $(basename $(wildcard $(TSTOOLSDIR)/*.h))),\
+                                            $(notdir $(basename $(wildcard $(TSTOOLSDIR)/*.cpp)))))
+    ifdef NOTELETEXT
+        export TSPLUGINS := $(filter-out tsplugin_teletext, $(TSPLUGINS))
+    endif
+endif
+
+# Product version
+
+ifndef TS_VERSION
+    export TS_MAJOR := $(shell $(GREP) '\#define *TS_VERSION_MAJOR ' $(LIBTSDUCKDIR)/tsVersion.h | $(SED) -e 's/.* //')
+    export TS_MINOR := $(shell $(GREP) '\#define *TS_VERSION_MINOR ' $(LIBTSDUCKDIR)/tsVersion.h | $(SED) -e 's/.* //')
+    export TS_COMMIT := $(shell $(GREP) '\#define *TS_COMMIT ' $(LIBTSDUCKDIR)/tsVersion.h | $(SED) -e 's/.* //')
+    export TS_VERSION := $(TS_MAJOR).$(TS_MINOR)
+    export TS_FULL_VERSION := $(TS_MAJOR).$(TS_MINOR)-$(TS_COMMIT)
+endif
+
+# Default installation root.
+# RPM packagers should override this in the "make install" command line.
+
+SYSROOT =
+
+# A shortcut-target to rebuild with static linking.
+# Not meaningfull everywhere:
+# - Static linking with system libraries is not supported on macOS.
+# - On Linux, all used libraries must be installed. This is not supported
+#   on all distros. On Fedora, you may install "glibc-static libstdc++-static"
+#   but there is no static package for curl and pcsclite.
+
+.PHONY: static
+static:
+	+@$(MAKE) STATIC=true
+
+ifdef STATIC
+    ifdef MACOS
+        $(error static linking is not supported on macOS)
+    else
+        CFLAGS_INCLUDES += -DTSDUCK_STATIC=1
+    endif
+else
+    LDLIBS := -ldl $(LDLIBS)
+endif
+
+# External include directories and libraries.
+
+ifdef CROSS_TARGET
+    # Some libraries are bypassed in cross-compilation.
+    NOCURL := true
+    NOPCSC := true
+    NODTAPI := true
+endif
+
+ifdef NOTELETEXT
+    CFLAGS_INCLUDES += -DTS_NOTELETEXT=1
+endif
+
+ifdef NOCURL
+    CFLAGS_INCLUDES += -DTS_NO_CURL=1
+else
+    ifndef CFLAGS_CURL
+        export CFLAGS_CURL := $(shell curl-config --cflags)
+        export LDLIBS_CURL := $(shell curl-config --libs)
+    endif
+    CFLAGS_INCLUDES += $(CFLAGS_CURL)
+    LDLIBS := $(LDLIBS_CURL) $(LDLIBS)
+endif
+
+ifdef NOPCSC
+    CFLAGS_INCLUDES += -DTS_NO_PCSC=1
+else
+    ifdef MACOS
+        CFLAGS_INCLUDES += -I/usr/local/opt/pcsc-lite/include/PCSC
+        LDLIBS := -L/usr/local/opt/pcsc-lite/lib/ -lpcsclite $(LDLIBS)
+    else
+        CFLAGS_INCLUDES += -I/usr/include/PCSC
+        LDLIBS := -lpcsclite $(LDLIBS)
+    endif
+endif
+
+ifdef NODTAPI
+    CFLAGS_INCLUDES += -DTS_NO_DTAPI=1
+endif
+
+ifdef MACOS
+    CFLAGS_INCLUDES += -I$(LIBTSDUCKDIR)/mac
+    LDFLAGS_EXTRA += -Wl,-rpath,@executable_path
+    SOFLAGS = -install_name '@rpath/$(notdir $@)'
+else
+    CFLAGS_INCLUDES += -I$(LIBTSDUCKDIR)/linux
+    LDFLAGS_EXTRA += -Wl,-rpath,'$$ORIGIN'
+    SOFLAGS = -Wl,-soname=$(notdir $@)
+endif
+
+CFLAGS_INCLUDES += -I$(LIBTSDUCKDIR)
+
+# The following script is used to build a few project files.
+# It shall be used when source files are added or removed in the library.
+
+BUILD_PROJ_FILES = $(ROOTDIR)/build/build-project-files.sh
+LIB_HEADERS = $(filter-out %/tsduck.h %/tsTables.h %/tsRefType.h, $(wildcard $(LIBTSDUCKDIR)/*.h $(LIBTSDUCKDIR)/*/*.h))
+LIB_SOURCES = $(wildcard $(LIBTSDUCKDIR)/*.cpp $(LIBTSDUCKDIR)/*/*.cpp)

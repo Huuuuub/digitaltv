@@ -1,0 +1,55 @@
+====================================================
+TSDuck - List of features to be implemented or fixed
+====================================================
+
+* Implement missing PSI/SI tables and descriptors (list below).
+
+  ISO/IEC 13818-1 / H.222 (MPEG system layer)
+  - 2.6.40   IOD_descriptor
+  - 2.6.44   FMC_descriptor
+  - 2.6.48   muxcode_descriptor
+  - 2.6.50   FmxBufferSize_descriptor
+  - 2.6.52   MultiplexBuffer_descriptor
+  - 2.11.3.8 ISO_IEC_14496_section
+
+  ISO/IEC 13818-1 2000, Amendment 1, Transport of Metadata
+  - 2.6.56  content_labelling_descriptor
+  - 2.6.58  metadata_pointer_descriptor
+  - 2.6.60  metadata_descriptor
+  - 2.6.62  metadata_STD_descriptor
+  - 2.12.6  metadata_section
+
+  ETSI EN 300 468 (DVB SI)
+  - 5.2.8    Stuffing Table (ST)
+  - 6.2.3    announcement_support_descriptor
+  - 6.2.6    cell_frequency_link_descriptor
+  - 6.2.7    cell_list_descriptor
+  - 6.2.14   DSNG_descriptor
+  - 6.2.17   frequency_list_descriptor
+  - 6.2.18   FTA_content_management_descriptor
+  - 6.2.21   mosaic_descriptor
+  - 6.2.30   PDC_descriptor
+  - 6.2.38   short_smoothing_buffer_descriptor
+  - 6.2.42   telephone_descriptor
+  - 6.4.4    part 9 of ETSI TS 102 825
+  - 6.4.5.1  C2_delivery_system_descriptor
+  - 6.4.5.2  SH_delivery_system_descriptor
+  - 6.4.5.3  T2_delivery_system_descriptor
+  - 6.4.5.4  C2_bundle_delivery_system_descriptor
+  - 6.4.6    image_icon_descriptor
+  - 6.4.8    network_change_notify_descriptor
+  - 6.4.11   target_region_descriptor
+  - 6.4.12   target_region_name_descriptor
+  - 6.4.14   URI_linkage_descriptor
+  - 6.4.15   video_depth_range_descriptor
+  - G.3.1    DTS-HD_audio_stream_descriptor
+
+  ETSI TS 102 006 (System Software Update)
+  - 9.5.2.6   update_descriptor
+  - 9.5.2.7   SSU_location_descriptor
+  - 9.5.2.8   SSU_subgroup_association_descriptor
+  - 9.5.2.9   scheduling_descriptor
+  - 9.5.2.11  SSU_event_name_descriptor
+  - 9.5.2.12  message_descriptor (not the same as ETSI EN 300 468, name it SSUMessageDescriptor)
+  - 9.5.2.14  enhanced_message_descriptor (name it SSUEnhancedMessageDescriptor for consistency)
+  - 9.5.2.15  ssu_uri_descriptor

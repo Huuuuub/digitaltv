@@ -1,0 +1,69 @@
+#-----------------------------------------------------------------------------
+#
+#  TSDuck - The MPEG Transport Stream Toolkit
+#  Copyright (c) 2005-2018, Thierry Lelegard
+#  All rights reserved.
+#
+#  Redistribution and use in source and binary forms, with or without
+#  modification, are permitted provided that the following conditions are met:
+#
+#  1. Redistributions of source code must retain the above copyright notice,
+#     this list of conditions and the following disclaimer.
+#  2. Redistributions in binary form must reproduce the above copyright
+#     notice, this list of conditions and the following disclaimer in the
+#     documentation and/or other materials provided with the distribution.
+#
+#  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+#  AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+#  IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+#  ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
+#  LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+#  CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+#  SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+#  INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+#  CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+#  ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF
+#  THE POSSIBILITY OF SUCH DAMAGE.
+#
+#-----------------------------------------------------------------------------
+#
+#  Makefile for tstools.
+#
+#-----------------------------------------------------------------------------
+
+# With static link, we compile in a specific directory.
+OBJDIR_SUFFIX := $(if $(STATIC),-static,)
+
+include ../../Makefile.tsduck
+
+default: execs $(OBJDIR)/setenv.sh
+	@true
+
+.PHONY: execs
+execs: $(EXECS)
+
+# tsp and tswitch have additional modules
+$(OBJDIR)/tsp: $(addprefix $(OBJDIR)/,$(addsuffix .o,$(filter tsp%,$(MODULES_LIB))))
+$(OBJDIR)/tsswitch: $(addprefix $(OBJDIR)/,$(addsuffix .o,$(filter tsswitch%,$(MODULES_LIB))))
+
+ifndef STATIC
+# With dynamic link (the default), we use the shareable library.
+$(EXECS): $(LIBTSDUCKDIR)/$(OBJDIR)/$(SHARED_LIBTSDUCK)
+else
+# With static link, we compile in a specific directory and we link tsp with all plugins.
+LDFLAGS_EXTRA = -static
+$(OBJDIR)/tsp: $(addprefix $(TSPLUGINSDIR)/$(OBJDIR)/,$(addsuffix .o,$(TSPLUGINS)))
+$(EXECS): $(LIBTSDUCKDIR)/$(OBJDIR)/$(STATIC_LIBTSDUCK)
+endif
+
+$(OBJDIR)/setenv.sh: Makefile
+	echo '[[ ":$$PATH:" != *:$(realpath $(OBJDIR)):* ]] && export PATH="$(realpath $(OBJDIR)):$$PATH"' >$@
+	echo 'export LD_LIBRARY_PATH="$(realpath $(LIBTSDUCKDIR)/$(OBJDIR))"' >>$@
+	echo 'export TSPLUGINS_PATH=$(realpath $(TSPLUGINSDIR)/$(OBJDIR)):$(realpath $(LIBTSDUCKDIR))' >>$@
+
+.PHONY: install install-devel
+install: $(EXECS)
+	install -d -m 755 $(SYSROOT)$(SYSPREFIX)/bin
+	install -m 755 $(EXECS) $(SYSROOT)$(SYSPREFIX)/bin
+install-devel:
+	@true
