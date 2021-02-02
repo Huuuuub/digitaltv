@@ -26,5 +26,5 @@ docker run -ti thecodeisgreen/dtv node tools parse mux1-cp.ts --table PMT
 ```
 docker pull thecodeisgreen/tsduck:latest
 docker run -ti thecodeisgreen/tsduck
-tsanalyze streams/mux1-cp.ts
+tsanalyze streams/mux1-cp.ts | more
 ```
